@@ -1,32 +1,38 @@
-#!/bin/bash
-set -eu
+#!/bin/sh
+
+# Crash hard and loud if error incomming...
+set -e
 
 status () {
   echo "---> ${@}" >&2
 }
 
+# Test variables bounding
 set -x
-: LDAP_ROOTPASS=${LDAP_ROOTPASS}
-: LDAP_DOMAIN=${LDAP_DOMAIN}
-: LDAP_ORGANISATION=${LDAP_ORGANISATION}
+: SLDAP_ROOTPASS=${SLAP_ROOTPASS}
+: SLDAP_DOMAIN=${SLDAP_DOMAIN}
+: SLDAP_ORGANISATION=${SLDAP_ORGANISATION}
+
+export LDAP_DOMAIN_DC="dc=$(echo ${SLDAP_DOMAIN} | sed  's/\./,dc=/g')"
 
 if [ ! -e /var/lib/ldap/docker_bootstrapped ]; then
   status "configuring slapd for first run"
 
   cat <<EOF | debconf-set-selections
-slapd slapd/internal/generated_adminpw password ${LDAP_ROOTPASS}
-slapd slapd/internal/adminpw password ${LDAP_ROOTPASS}
-slapd slapd/password2 password ${LDAP_ROOTPASS}
-slapd slapd/password1 password ${LDAP_ROOTPASS}
+slapd slapd/internal/generated_adminpw password ${SLDAP_ROOTPASS}
+slapd slapd/internal/adminpw password ${SLDAP_ROOTPASS}
+slapd slapd/password2 password ${SLDAP_ROOTPASS}
+slapd slapd/password1 password ${SLDAP_ROOTPASS}
 slapd slapd/dump_database_destdir string /var/backups/slapd-VERSION
-slapd slapd/domain string ${LDAP_DOMAIN}
-slapd shared/organization string ${LDAP_ORGANISATION}
+slapd slapd/domain string ${SLDAP_DOMAIN}
+slapd shared/organization string ${SLDAP_ORGANISATION}
 slapd slapd/purge_database boolean true
 slapd slapd/move_old_database boolean true
 slapd slapd/allow_ldap_v2 boolean false
 slapd slapd/no_configuration boolean false
 slapd slapd/dump_database select when needed
 EOF
+
 
   dpkg-reconfigure -f noninteractive slapd
 
@@ -52,10 +58,19 @@ EOF
                                  /etc/ldap/schema/fusiondirectory/dns-fd-conf.schema \
                                  /etc/ldap/schema/fusiondirectory/dns-fd.schema \
                                  /etc/ldap/schema/fusiondirectory/dnszone.schema \
-                                 /etc/ldap/schema/fusiondirectory/dsa-fd-conf.schema
-   # /etc/ldap/schema/fusiondirectory/ppolicy-fd-conf.schema \
-       # /etc/ldap/schema/fusiondirectory/personal-fd.schema \
-       # /etc/ldap/schema/fusiondirectory/personal-fd-conf.schema \
+                                 /etc/ldap/schema/fusiondirectory/dsa-fd-conf.schema \
+                                 /etc/ldap/schema/ppolicy.schema \
+                                 /etc/ldap/schema/fusiondirectory/ppolicy-fd-conf.schema \
+                                 /etc/ldap/schema/fusiondirectory/personal-fd.schema \
+                                 /etc/ldap/schema/fusiondirectory/personal-fd-conf.schema
+
+   echo "Configure overlays"
+   ls /root/overlay_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
+   ls /root/overlay_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -Y EXTERNAL -f {}
+
+   echo "Configure BaseDn"
+   ls /root/basedn_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
+   ls /root/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
 
   ) &
 
@@ -67,4 +82,4 @@ fi
 
 status "starting slapd"
 set -x
-exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512`
+exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d `expr 64 + 256 + 512` # `expr 64 + 256 + 512`

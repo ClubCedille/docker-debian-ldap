@@ -20,20 +20,25 @@ RUN apt-get update && \
      fusiondirectory-plugin-sudo-schema \
      fusiondirectory-plugin-fusioninventory-schema \
      fusiondirectory-plugin-dns-schema \
-     fusiondirectory-plugin-dsa-schema
-          # fusiondirectory-plugin-personal-schema \
-     # fusiondirectory-plugin-ppolicy-schema \
+     fusiondirectory-plugin-dsa-schema \
+     fusiondirectory-plugin-ppolicy-schema \
+     fusiondirectory-plugin-personal-schema
 
 RUN schema2ldif /etc/ldap/schema/fusiondirectory/rfc2307bis.schema > /etc/ldap/schema/fusiondirectory/rfc2307bis.ldif && \
     sed -i "s|include: file:///etc/ldap/schema/nis.ldif|include: file:///etc/ldap/schema/fusiondirectory/rfc2307bis.ldif|g" /usr/share/slapd/slapd.init.ldif
 
 # Default configuration: can be overridden at the docker command line
-ENV LDAP_ROOTPASS toor
-ENV LDAP_ORGANISATION Acme Widgets Inc.
-ENV LDAP_DOMAIN example.com
+ENV SLDAP_ROOTPASS toor
+ENV SLDAP_ORGANISATION Acme Widgets Inc.
+ENV SLDAP_DOMAIN example.com
 
-# # RUN mkdir /etc/services.d/slapd
+
 ADD slapd/slapd.sh /usr/local/bin/slapd.sh
+
+# Add configurations
+ADD slapd/overlay_ldif /root/overlay_ldif
+ADD slapd/basedn_ldif /root/basedn_ldif
+
 ADD supervisor-slapd.conf /etc/supervisor/conf.d/slapd.conf
 
 # To prevent this error : "TERM environment variable not set."
