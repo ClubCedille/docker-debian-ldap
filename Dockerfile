@@ -1,4 +1,4 @@
-FROM debian-base
+FROM clubcedille/debian-supervisord
 
 RUN  echo "# fusiondirectory repository \n\
 deb http://repos.fusiondirectory.org/debian-wheezy wheezy main \n\
