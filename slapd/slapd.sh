@@ -72,6 +72,8 @@ EOF
    ls /root/basedn_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
    ls /root/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
 
+   echo "Notify setup ready to client"
+   while true; do  echo "LDAP is ready to serve master" | nc -l 1337; done
   ) &
 
 
