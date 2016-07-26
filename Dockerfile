@@ -1,4 +1,5 @@
 FROM clubcedille/debian-supervisord
+MAINTAINER Michael Faille <michael@faille.io>
 
 RUN  echo "# fusiondirectory repository \n\
 deb http://repos.fusiondirectory.org/debian-wheezy wheezy main \n\
