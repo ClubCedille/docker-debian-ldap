@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Crash hard and loud if error incomming...
 set -e
@@ -73,7 +73,9 @@ EOF
    ls /root/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
 
    echo "Notify setup ready to client"
-   while true; do  echo "LDAP is ready to serve master" | nc -l 1337; done
+   export finish=0
+   trap 'finish=1; exit 1' INT TERM
+   while [[ "$finish" -ne 1 ]]; do echo "LDAP is ready to serve master" | nc -q1 -l  -p 1337 ; done
   ) &
 
 
@@ -84,4 +86,4 @@ fi
 
 status "starting slapd"
 set -x
-exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
+exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
