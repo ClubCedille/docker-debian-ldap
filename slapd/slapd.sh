@@ -82,21 +82,20 @@ EOF
          ls /root/basedn_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
          ls /root/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
 
+         # Generate and keep seesion ID
+         if [ ! -f /etc/default/slapd-id ]; then
+             openssl rand 100000 |   tr -dc _A-Z-a-z-0-9 | head -c${1:-32} > /etc/default/slapd-id
+         fi
+
+         # Assign session ID to potential Docker volumes
+         cat /etc/default/slapd-id > /var/lib/ldap/slapd_bootstrapped
+         cat /etc/default/slapd-id > /etc/ldap/slapd.d/slapd_configs_bootstrapped
+
          echo "Notify setup ready to client"
          export finish=0
          trap 'finish=1; exit 1' INT TERM
          while [[ "$finish" -ne 1 ]]; do echo "LDAP is ready to serve master" | nc -q1 -l  -p 1337 ; done
         ) &
-
-        # Generate and keep seesion ID
-        if [ ! -f /etc/default/slapd-id ]; then
-            openssl rand 100000 |   tr -dc _A-Z-a-z-0-9 | head -c${1:-32} > /etc/default/slapd-id
-        fi
-
-        # Assign session ID to potential Docker volumes
-        cat /etc/default/slapd-id > /var/lib/ldap/slapd_bootstrapped
-        cat /etc/default/slapd-id > /etc/ldap/slapd_configs_bootstrapped
-
 }
 
 
@@ -109,7 +108,7 @@ CMP_RESULT=$?
 case "$CMP_RESULT" in
     "1")
         status "The content ID of these files must be same to enforce slapd data integrity :
-        /etc/ldap/slapd_configs_bootstrapped: $(cat /etc/ldap/slapd_configs_bootstrapped)
+        /etc/ldap/slapd.d/slapd_configs_bootstrapped: $(cat /etc/ldap/slapd.d/slapd_configs_bootstrapped)
         /var/lib/ldap/slapd_bootstrapped: $(cat /var/lib/ldap/slapd_bootstrapped)"
         exit 1
         ;;
@@ -117,17 +116,17 @@ case "$CMP_RESULT" in
         # continue to crash hard on error
         set -e
 
-        if [ ! -e /etc/ldap/slapd_configs_bootstrapped ] && [ ! -e /var/lib/ldap/slapd_bootstrapped ] ; then
+        if [ ! -e /etc/ldap/slapd.d/slapd_configs_bootstrapped ] && [ ! -e /var/lib/ldap/slapd_bootstrapped ] ; then
             configure_slapd
             start_slapd
-            exit 0
+#            exit 0
         else
 
             status "Only one of these files does not exist between
          /etc/ldap/slapd_configs_bootstrapped
         and
         /var/lib/ldap/slapd_bootstrapped"
-            exit 2
+ #           exit 2
         fi
 
         ;;
@@ -142,6 +141,6 @@ case "$CMP_RESULT" in
         ;;
     *)
         echo "Unhandled error number $CMP_RESULT from the following command :
-        cmp -s /etc/ldap/slapd_configs_bootstrapped /var/lib/ldap/slapd_bootstrapped > /dev/null"
+        cmp -s /etc/ldap/slapd.d/slapd_configs_bootstrapped /var/lib/ldap/slapd_bootstrapped > /dev/null"
         exit 3
 esac
