@@ -15,10 +15,20 @@ set -x
 
 export LDAP_DOMAIN_DC="dc=$(echo ${SLDAP_DOMAIN} | sed  's/\./,dc=/g')"
 
-if [ ! -e /var/lib/ldap/docker_bootstrapped ]; then
-  status "configuring slapd for first run"
+function start_slapd {
+        status "starting slapd"
 
-  cat <<EOF | debconf-set-selections
+        set -x
+        exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
+}
+
+
+# Configure slapd. This function is use after its declaration.
+function configure_slapd {
+
+        status "configuring slapd for first run"
+
+        cat <<EOF | debconf-set-selections
 slapd slapd/internal/generated_adminpw password ${SLDAP_ROOTPASS}
 slapd slapd/internal/adminpw password ${SLDAP_ROOTPASS}
 slapd slapd/password2 password ${SLDAP_ROOTPASS}
@@ -34,56 +44,104 @@ slapd slapd/dump_database select when needed
 EOF
 
 
-  dpkg-reconfigure -f noninteractive slapd
+        dpkg-reconfigure -f noninteractive slapd
 
-  (sleep 4;
-   echo "Prepare functiondirectory schemas"
-   fusiondirectory-insert-schema;
-   fusiondirectory-insert-schema --insert \
-                                 /etc/ldap/schema/fusiondirectory/mail-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/mail-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/alias-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/alias-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/systems-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/service-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/systems-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/audit-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/audit-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/openssh-lpk.schema \
-                                 /etc/ldap/schema/fusiondirectory/sudo-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/sudo.schema \
-                                 /etc/ldap/schema/fusiondirectory/inventory-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/fusioninventory-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/fusioninventory-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/dns-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/dns-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/dnszone.schema \
-                                 /etc/ldap/schema/fusiondirectory/dsa-fd-conf.schema \
-                                 /etc/ldap/schema/ppolicy.schema \
-                                 /etc/ldap/schema/fusiondirectory/ppolicy-fd-conf.schema \
-                                 /etc/ldap/schema/fusiondirectory/personal-fd.schema \
-                                 /etc/ldap/schema/fusiondirectory/personal-fd-conf.schema
+        (sleep 4;
+         status "Prepare LDAP/Fusion-Directory schemas"
+         fusiondirectory-insert-schema;
+         fusiondirectory-insert-schema --insert \
+                                       /etc/ldap/schema/fusiondirectory/mail-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/mail-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/alias-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/alias-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/systems-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/service-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/systems-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/audit-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/audit-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/openssh-lpk.schema \
+                                       /etc/ldap/schema/fusiondirectory/sudo-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/sudo.schema \
+                                       /etc/ldap/schema/fusiondirectory/inventory-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/fusioninventory-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/fusioninventory-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/dns-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/dns-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/dnszone.schema \
+                                       /etc/ldap/schema/fusiondirectory/dsa-fd-conf.schema \
+                                       /etc/ldap/schema/ppolicy.schema \
+                                       /etc/ldap/schema/fusiondirectory/ppolicy-fd-conf.schema \
+                                       /etc/ldap/schema/fusiondirectory/personal-fd.schema \
+                                       /etc/ldap/schema/fusiondirectory/personal-fd-conf.schema
 
-   echo "Configure overlays"
-   ls /root/overlay_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
-   ls /root/overlay_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -Y EXTERNAL -f {}
+         echo "Configure overlays"
+         ls /root/overlay_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
+         ls /root/overlay_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -Y EXTERNAL -f {}
 
-   echo "Configure BaseDn"
-   ls /root/basedn_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
-   ls /root/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
+         echo "Configure BaseDn"
+         ls /root/basedn_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
+         ls /root/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
 
-   echo "Notify setup ready to client"
-   export finish=0
-   trap 'finish=1; exit 1' INT TERM
-   while [[ "$finish" -ne 1 ]]; do echo "LDAP is ready to serve master" | nc -q1 -l  -p 1337 ; done
-  ) &
+         echo "Notify setup ready to client"
+         export finish=0
+         trap 'finish=1; exit 1' INT TERM
+         while [[ "$finish" -ne 1 ]]; do echo "LDAP is ready to serve master" | nc -q1 -l  -p 1337 ; done
+        ) &
+
+        # Generate and keep seesion ID
+        if [ ! -f /etc/default/slapd-id ]; then
+            openssl rand 100000 |   tr -dc _A-Z-a-z-0-9 | head -c${1:-32} > /etc/default/slapd-id
+        fi
+
+        # Assign session ID to potential Docker volumes
+        cat /etc/default/slapd-id > /var/lib/ldap/slapd_bootstrapped
+        cat /etc/default/slapd-id > /etc/ldap/slapd_configs_bootstrapped
+
+}
 
 
-  touch /var/lib/ldap/docker_bootstrapped
-else
-  status "found already-configured slapd"
-fi
+# Here, handle error manually
+set +e
 
-status "starting slapd"
-set -x
-exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
+cmp -s /etc/ldap/slapd_configs_bootstrapped /var/lib/ldap/slapd_bootstrapped > /dev/null
+CMP_RESULT=$?
+
+case "$CMP_RESULT" in
+    "1")
+        status "The content ID of these files must be same to enforce slapd data integrity :
+        /etc/ldap/slapd_configs_bootstrapped: $(cat /etc/ldap/slapd_configs_bootstrapped)
+        /var/lib/ldap/slapd_bootstrapped: $(cat /var/lib/ldap/slapd_bootstrapped)"
+        exit 1
+        ;;
+    "2")
+        # continue to crash hard on error
+        set -e
+
+        if [ ! -e /etc/ldap/slapd_configs_bootstrapped ] && [ ! -e /var/lib/ldap/slapd_bootstrapped ] ; then
+            configure_slapd
+            start_slapd
+            exit 0
+        else
+
+            status "Only one of these files does not exist between
+         /etc/ldap/slapd_configs_bootstrapped
+        and
+        /var/lib/ldap/slapd_bootstrapped"
+            exit 2
+        fi
+
+        ;;
+    0)
+        # continue to crash hard on error
+        set -e
+
+        status "found already-configured slapd"
+        start_slapd
+        exit 0
+
+        ;;
+    *)
+        echo "Unhandled error number $CMP_RESULT from the following command :
+        cmp -s /etc/ldap/slapd_configs_bootstrapped /var/lib/ldap/slapd_bootstrapped > /dev/null"
+        exit 3
+esac
