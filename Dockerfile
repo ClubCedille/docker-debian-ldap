@@ -1,6 +1,14 @@
 FROM clubcedille/debian-supervisord
 MAINTAINER Michael Faille <michael@faille.io>
 
+# Default configuration: can be overridden at the docker command line
+ENV LDAP_SERVER configure-me
+ENV SLDAP_ROOTPASS toor
+ENV SLDAP_ORGANISATION Acme Widgets Inc.
+ENV SLDAP_DOMAIN example.com
+
+ENV FUSIONDIRECTORY_DEB_PKG_VERSION 1.0.14*
+
 RUN  echo "# fusiondirectory repository \n\
 deb http://repos.fusiondirectory.org/debian-wheezy wheezy main \n\
 \n\
@@ -12,26 +20,21 @@ gpg --export -a "Fusiondirectory Archive Manager <contact@fusiondirectory.org>" 
 
 RUN apt-get update && \
      DEBIAN_FRONTEND=noninteractive apt-get install  -y slapd ldap-utils \
-     fusiondirectory-schema \
-     fusiondirectory-plugin-systems-schema \
-     fusiondirectory-plugin-mail-schema \
-     fusiondirectory-plugin-audit-schema \
-     fusiondirectory-plugin-alias-schema \
-     fusiondirectory-plugin-ssh-schema \
-     fusiondirectory-plugin-sudo-schema \
-     fusiondirectory-plugin-fusioninventory-schema \
-     fusiondirectory-plugin-dns-schema \
-     fusiondirectory-plugin-dsa-schema \
-     fusiondirectory-plugin-ppolicy-schema \
-     fusiondirectory-plugin-personal-schema
+     fusiondirectory-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-systems-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-mail-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-audit-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-alias-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-ssh-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-sudo-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-fusioninventory-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-dns-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-dsa-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-ppolicy-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION} \
+     fusiondirectory-plugin-personal-schema=${FUSIONDIRECTORY_DEB_PKG_VERSION}
 
 RUN schema2ldif /etc/ldap/schema/fusiondirectory/rfc2307bis.schema > /etc/ldap/schema/fusiondirectory/rfc2307bis.ldif && \
     sed -i "s|include: file:///etc/ldap/schema/nis.ldif|include: file:///etc/ldap/schema/fusiondirectory/rfc2307bis.ldif|g" /usr/share/slapd/slapd.init.ldif
-
-# Default configuration: can be overridden at the docker command line
-ENV SLDAP_ROOTPASS toor
-ENV SLDAP_ORGANISATION Acme Widgets Inc.
-ENV SLDAP_DOMAIN example.com
 
 
 ADD slapd/slapd.sh /usr/local/bin/slapd.sh
