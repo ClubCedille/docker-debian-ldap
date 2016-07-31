@@ -7,7 +7,7 @@ ENV SLDAP_ROOTPASS toor
 ENV SLDAP_ORGANISATION Acme Widgets Inc.
 ENV SLDAP_DOMAIN example.com
 
-ENV FUSIONDIRECTORY_DEB_PKG_VERSION 1.0.14*
+ENV FUSIONDIRECTORY_DEB_PKG_VERSION *
 
 RUN  echo "# fusiondirectory repository \n\
 deb http://repos.fusiondirectory.org/debian-wheezy wheezy main \n\
