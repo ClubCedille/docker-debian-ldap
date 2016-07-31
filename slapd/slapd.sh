@@ -119,14 +119,14 @@ case "$CMP_RESULT" in
         if [ ! -e /etc/ldap/slapd.d/slapd_configs_bootstrapped ] && [ ! -e /var/lib/ldap/slapd_bootstrapped ] ; then
             configure_slapd
             start_slapd
-#            exit 0
+            exit 0
         else
 
             status "Only one of these files does not exist between
          /etc/ldap/slapd_configs_bootstrapped
         and
         /var/lib/ldap/slapd_bootstrapped"
- #           exit 2
+            exit 2
         fi
 
         ;;
