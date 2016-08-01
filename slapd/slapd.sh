@@ -19,8 +19,8 @@ function start_slapd {
         status "starting slapd"
 
         # Remove password as environment variable
-        SLDAP_ROOTPASS=""
-        FUSIONDIRECTORY_PASSWORD=""
+        export SLDAP_ROOTPASS=""
+        export FUSIONDIRECTORY_PASSWORD=""
 
         set -x
         exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
@@ -96,8 +96,8 @@ EOF
          cat /etc/default/slapd-id > /etc/ldap/slapd.d/slapd_configs_bootstrapped
 
          # Remove password as environment variable
-         SLDAP_ROOTPASS=""
-         FUSIONDIRECTORY_PASSWORD=""
+         export SLDAP_ROOTPASS=""
+         export FUSIONDIRECTORY_PASSWORD=""
 
          echo "Notify setup ready to client"
          export finish=0
