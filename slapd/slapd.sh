@@ -20,6 +20,7 @@ function start_slapd {
 
         # Remove password as environment variable
         SLDAP_ROOTPASS=""
+        FUSIONDIRECTORY_PASSWORD=""
 
         set -x
         exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
@@ -96,6 +97,7 @@ EOF
 
          # Remove password as environment variable
          SLDAP_ROOTPASS=""
+         FUSIONDIRECTORY_PASSWORD=""
 
          echo "Notify setup ready to client"
          export finish=0
