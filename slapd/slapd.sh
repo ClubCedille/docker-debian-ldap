@@ -18,6 +18,9 @@ export LDAP_DOMAIN_DC="dc=$(echo ${SLDAP_DOMAIN} | sed  's/\./,dc=/g')"
 function start_slapd {
         status "starting slapd"
 
+        # Remove password as environment variable
+        SLDAP_ROOTPASS=""
+
         set -x
         exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
 }
@@ -90,6 +93,9 @@ EOF
          # Assign session ID to potential Docker volumes
          cat /etc/default/slapd-id > /var/lib/ldap/slapd_bootstrapped
          cat /etc/default/slapd-id > /etc/ldap/slapd.d/slapd_configs_bootstrapped
+
+         # Remove password as environment variable
+         SLDAP_ROOTPASS=""
 
          echo "Notify setup ready to client"
          export finish=0
