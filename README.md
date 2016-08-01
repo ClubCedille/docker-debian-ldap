@@ -30,5 +30,5 @@ https://github.com/ClubCedille/docker-debian-fusiondirectory/blob/master/README.
 
 ## TODO
 
-- Having ldap database in Docker volume.
+- [x] Having ldap database in Docker volume.
 - Add more options on this Docker image.
