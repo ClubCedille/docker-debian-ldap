@@ -36,12 +36,8 @@ RUN apt-get update && \
 RUN schema2ldif /etc/ldap/schema/fusiondirectory/rfc2307bis.schema > /etc/ldap/schema/fusiondirectory/rfc2307bis.ldif && \
     sed -i "s|include: file:///etc/ldap/schema/nis.ldif|include: file:///etc/ldap/schema/fusiondirectory/rfc2307bis.ldif|g" /usr/share/slapd/slapd.init.ldif
 
-
-ADD slapd/slapd.sh /usr/local/bin/slapd.sh
-
 # Add configurations
-ADD slapd/overlay_ldif /root/overlay_ldif
-ADD slapd/basedn_ldif /root/basedn_ldif
+ADD slapd /opt/slapd
 
 ADD supervisor-slapd.conf /etc/supervisor/conf.d/slapd.conf
 
