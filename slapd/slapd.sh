@@ -110,7 +110,7 @@ EOF
 # Here, handle error manually
 set +e
 
-cmp -s /etc/ldap/slapd_configs_bootstrapped /var/lib/ldap/slapd_bootstrapped > /dev/null
+cmp -s /etc/ldap/slapd.d/slapd_configs_bootstrapped /var/lib/ldap/slapd_bootstrapped > /dev/null
 CMP_RESULT=$?
 
 case "$CMP_RESULT" in
@@ -131,7 +131,7 @@ case "$CMP_RESULT" in
         else
 
             status "Only one of these files does not exist between
-         /etc/ldap/slapd_configs_bootstrapped
+         /etc/ldap/slapd.d/slapd_configs_bootstrapped
         and
         /var/lib/ldap/slapd_bootstrapped"
             exit 2
