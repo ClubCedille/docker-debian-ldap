@@ -15,6 +15,12 @@ set -x
 
 export LDAP_DOMAIN_DC="dc=$(echo ${SLDAP_DOMAIN} | sed  's/\./,dc=/g')"
 
+
+function notify_slapd_started {
+    while [[ "$finish" -ne 1 ]]; do echo "LDAP is ready to serve master" | gosu nobody:nobody nc -q1 -l -p 1337 ; done
+}
+
+
 function start_slapd {
         status "starting slapd"
 
@@ -23,9 +29,8 @@ function start_slapd {
         export FUSIONDIRECTORY_PASSWORD=""
 
         set -x
-        exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512`
+        exec /usr/sbin/slapd -h 'ldap:/// ldapi:///' -u openldap -g openldap -d 0 # `expr 64 + 256 + 512` # `expr 64 + 256 + 512` &
 }
-
 
 # Configure slapd. This function is use after its declaration.
 function configure_slapd {
@@ -102,8 +107,9 @@ EOF
          echo "Notify setup ready to client"
          export finish=0
          trap 'finish=1; exit 1' INT TERM
-         while [[ "$finish" -ne 1 ]]; do echo "LDAP is ready to serve master" | nc -q1 -l  -p 1337 ; done
+
         ) &
+
 }
 
 
@@ -126,7 +132,8 @@ case "$CMP_RESULT" in
 
         if [ ! -e /etc/ldap/slapd.d/slapd_configs_bootstrapped ] && [ ! -e /var/lib/ldap/slapd_bootstrapped ] ; then
             configure_slapd
-            start_slapd
+            start_slapd &
+            notify_slapd_started
             exit 0
         else
 
@@ -143,7 +150,8 @@ case "$CMP_RESULT" in
         set -e
 
         status "found already-configured slapd"
-        start_slapd
+        start_slapd &
+        notify_slapd_started
         exit 0
 
         ;;
