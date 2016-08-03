@@ -42,11 +42,6 @@ case "$CMP_RESULT" in
             wait_slapd
             configure_slapd
             supervisorctl stop slapd-deamon-config
-
-            # Remove password as environment variable
-            export SLDAP_ROOTPASS=""
-            export FUSIONDIRECTORY_PASSWORD=""
-
             supervisorctl start slapd-deamon
             exit 0
         else
@@ -64,11 +59,6 @@ case "$CMP_RESULT" in
         set -e
 
         status "found already-configured slapd"
-
-
-        # Remove password as environment variable
-        export SLDAP_ROOTPASS=""
-        export FUSIONDIRECTORY_PASSWORD=""
 
         supervisorctl start slapd-deamon
         exit 0
