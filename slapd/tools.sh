@@ -64,11 +64,11 @@ function configure_slapd {
 
          echo "Configure overlays"
          ls /opt/slapd/overlay_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
-         ls /opt/slapd/overlay_ldif/*.ldif | xargs -i ldapmodify -H ldapi://%2Fusr%2Flocal%2Fvar%2Fldapi -Y EXTERNAL -f {}
+         ls /opt/slapd/overlay_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -Y EXTERNAL -f {}
 
          echo "Configure BaseDn"
          ls /opt/slapd/basedn_ldif/*.in | sed 's/\.in$//g' | xargs -i bash -c  "envsubst < {}.in > {}.ldif"
-         ls /opt/slapd/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi://%2Fusr%2Flocal%2Fvar%2Fldapi -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
+         ls /opt/slapd/basedn_ldif/*.ldif | xargs -i ldapmodify -H ldapi:/// -D cn=admin,${LDAP_DOMAIN_DC} -w ${SLDAP_ROOTPASS} -f {}
 
          # Generate and keep seesion ID
          if [ ! -f /etc/default/slapd-id ]; then
