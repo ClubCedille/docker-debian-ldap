@@ -85,7 +85,7 @@ function configure_slapd {
 function wait_slapd {
 
     set +e
-    for i in {0..10}
+    for i in {0..30}
     do
         ldapsearch -Y EXTERNAL -H ldapi:/// -b cn=config >/dev/null
         is_slapd_running=$?
@@ -93,7 +93,7 @@ function wait_slapd {
         if (( "${is_slapd_running}" == 0 )); then
             break 1;
         else
-            if (( "$i"  == 10 )); then
+            if (( "$i"  == 30 )); then
                 echo "Ldap server dont respond after $i seconds"
                 exit 1 ;
             fi;
