@@ -44,4 +44,4 @@ ADD supervisor-slapd.conf /etc/supervisor/conf.d/slapd.conf
 # To prevent this error : "TERM environment variable not set."
 ENV TERM xterm
 
-EXPOSE 386
+EXPOSE 389
